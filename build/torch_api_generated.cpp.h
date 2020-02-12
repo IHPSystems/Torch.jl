@@ -6295,6 +6295,7 @@ void atg_threshold_out(tensor *out__, tensor out, tensor self, scalar threshold,
 void atg_to(tensor *out__, tensor self, int device) {
   PROTECT(
     auto outputs__ = self->to(device_of_int(device));
+    // auto t = new torch::Tensor(outputs__);
     out__[0] = new torch::Tensor(outputs__);
   )
 }

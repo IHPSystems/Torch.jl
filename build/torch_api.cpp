@@ -1,10 +1,14 @@
 #include<torch/csrc/autograd/engine.h>
 #include<torch/torch.h>
 #include<torch/script.h>
+#include<c10/cuda/CUDACachingAllocator.h>
+#include<c10/cuda/CUDAStream.h>
 #include<vector>
-#include<caml/fail.h>
+// #include<caml/fail.h>
+#include<julia.h>
 #include "torch_api.h"
 
+#define caml_invalid_argument printf
 using namespace std;
 
 void at_manual_seed(int64_t seed) {
@@ -24,11 +28,29 @@ tensor at_new_tensor() {
   return nullptr;
 }
 
+void at_empty_cache() {
+  PROTECT(
+    c10::cuda::CUDACachingAllocator::emptyCache();
+  )
+}
+
+int at_no_grad(int flag) {
+  torch::GradMode::set_enabled((bool)flag);
+  return flag;
+}
+
+void at_sync() {
+  at::cuda::CUDAStream stream = at::cuda::getCurrentCUDAStream();
+  C10_CUDA_CHECK(cudaStreamSynchronize(stream));
+  // torch::cuda::synchronize();
+}
+
 tensor at_tensor_of_data(void *vs, int64_t *dims, int ndims, int element_size_in_bytes, int type) {
   PROTECT(
+    // auto options = torch::TensorOptions().dtype(torch::ScalarType(type)).requires_grad(false);
     torch::Tensor tensor = torch::zeros(torch::IntArrayRef(dims, ndims), torch::ScalarType(type));
     if (element_size_in_bytes != tensor.element_size())
-      caml_failwith("incoherent element sizes in bytes");
+      jl_error("incoherent element sizes in bytes");
     void *tensor_data = tensor.data_ptr();
     memcpy(tensor_data, vs, tensor.numel() * element_size_in_bytes);
     return new torch::Tensor(tensor);
@@ -39,9 +61,9 @@ tensor at_tensor_of_data(void *vs, int64_t *dims, int ndims, int element_size_in
 void at_copy_data(tensor tensor, void *vs, int64_t numel, int elt_size_in_bytes) {
   PROTECT(
     if (elt_size_in_bytes != tensor->element_size())
-      caml_failwith("incoherent element sizes in bytes");
+      jl_error("incoherent element sizes in bytes");
     if (numel != tensor->numel())
-      caml_failwith("incoherent number of elements");
+      jl_error("incoherent number of elements");
     if (tensor->device().type() != at::kCPU) {
       torch::Tensor tmp_tensor = tensor->to(at::kCPU);
       void *tensor_data = tmp_tensor.contiguous().data_ptr();
@@ -427,7 +449,7 @@ tensor atm_forward(module m, tensor *tensors, int ntensors) {
       inputs.push_back(*(tensors[i]));
     torch::jit::IValue output = m->forward(inputs);
     if (!output.isTensor())
-      caml_failwith("forward did not return a tensor");
+      jl_error("forward did not return a tensor");
     return new torch::Tensor(output.toTensor());
   )
   return nullptr;
@@ -486,7 +508,7 @@ int ati_tag(ivalue i) {
     else if (i->isInt()) return 1;
     else if (i->isDouble()) return 2;
     else if (i->isTuple()) return 3;
-    caml_failwith(("unsupported tag" + i->tagKind()).c_str());
+    jl_error(("unsupported tag" + i->tagKind()).c_str());
     return -1;
   )
   return -1;
@@ -526,7 +548,7 @@ void ati_to_tuple(ivalue i,
   PROTECT(
     auto vec = i->toTuple()->elements();
     if (vec.size() != noutputs) {
-      caml_failwith("unexpected tuple size");
+      jl_error("unexpected tuple size");
     }
     for (int i = 0; i < noutputs; ++i)
       outputs[i] = new torch::jit::IValue(vec[i]);
