@@ -1,5 +1,19 @@
-# Building the Wrapper
+# Wrapper
 
+## Generating
+
+```sh
+cd WrapperGenerator
+julia --project --eval '
+  using Pkg
+  Pkg.instantiate()
+  using Torch_jll
+  push!(ARGS, joinpath(dirname(Torch_jll.libtorch_path), "..", "share", "ATen", "Declarations.yaml"))
+  push!(ARGS, joinpath("..", "torch_api_generated"))
+  include("generate_wrapper.jl")'
+```
+
+## Building
 The project can be built given that we can provide the paths to working Torch and CUDA/ CUDNN projects. The binaries can also be downloaded from the [official libtorch binaries](https://pytorch.org/get-started/locally/), which is what the wrapper is based on. This currently supports torch v1.4.0.
 
 ```code
