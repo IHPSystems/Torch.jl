@@ -43,9 +43,18 @@ int at_float_vec(double *values, int value_len, int type);
 int at_int_vec(int64_t *values, int value_len, int type);
 
 int at_defined(int *i, tensor);
+int at_is_sparse(tensor);
+int at_device(tensor);
 int at_dim(int *i, tensor);
 int at_shape(tensor, int *);
+void at_stride(tensor, int *);
 int at_scalar_type(int *i, tensor);
+
+void at_autocast_clear_cache();
+int at_autocast_decrement_nesting();
+int at_autocast_increment_nesting();
+int at_autocast_is_enabled();
+int at_autocast_set_enabled(int b);
 
 int at_backward(tensor, int, int);
 int at_requires_grad(int *i, tensor);
@@ -66,6 +75,9 @@ int at_print(tensor);
 // char *at_to_string(tensor, int line_size);
 int at_save(tensor, char *filename);
 tensor at_load(char *filename);
+
+int at_get_num_threads();
+void at_set_num_threads(int n_threads);
 
 int at_save_multi(tensor *tensors, char **tensor_names, int ntensors, char *filename);
 /* [at_load_multi] takes as input an array of nullptr for [tensors]. */
@@ -88,7 +100,8 @@ int at_run_backward(tensor *tensors,
 int ato_adam(optimizer *, double learning_rate,
                    double beta1,
                    double beta2,
-                   double weight_decay);
+                   double weight_decay,
+                   double eps);
 int ato_rmsprop(optimizer *, double learning_rate,
                       double alpha,
                       double eps,
@@ -123,16 +136,36 @@ int atm_forward_(ivalue *, module,
                     int nivalues);
 int atm_free(module);
 
+ivalue ati_none();
 int ati_tensor(ivalue *, tensor);
+ivalue ati_bool(int);
 int ati_int(ivalue *, int64_t);
 int ati_double(ivalue *, double);
 int ati_tuple(ivalue *, ivalue *, int);
+ivalue ati_string(char *);
+ivalue ati_tuple(ivalue *, int);
+ivalue ati_generic_list(ivalue *, int);
+ivalue ati_generic_dict(ivalue *, int);
+ivalue ati_int_list(int64_t *, int);
+ivalue ati_double_list(double *, int);
+ivalue ati_bool_list(char *, int);
+ivalue ati_string_list(char **, int);
+ivalue ati_tensor_list(tensor *, int);
 
 int ati_to_tensor(tensor *, ivalue);
 int ati_to_int(int64_t *, ivalue);
 int ati_to_double(double *, ivalue);
+char *ati_to_string(ivalue);
+int ati_to_bool(ivalue);
+int ati_length(ivalue);
 int ati_tuple_length(int *, ivalue);
 int ati_to_tuple(ivalue, ivalue *, int);
+void ati_to_generic_list(ivalue, ivalue *, int);
+void ati_to_generic_dict(ivalue, ivalue *, int);
+void ati_to_int_list(ivalue, int64_t *, int);
+void ati_to_double_list(ivalue, double *, int);
+void ati_to_bool_list(ivalue, char *, int);
+void ati_to_tensor_list(ivalue, tensor *, int);
 
 int ati_tag(int *, ivalue);
 
