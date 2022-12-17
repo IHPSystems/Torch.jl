@@ -2,8 +2,10 @@
 #include<torch/torch.h>
 #include<ATen/autocast_mode.h>
 #include<torch/script.h>
+#ifdef CUDA
 #include<c10/cuda/CUDACachingAllocator.h>
 #include<c10/cuda/CUDAStream.h>
+#endif
 #include<vector>
 // #include<caml/fail.h>
 // #include<julia.h>
@@ -74,6 +76,7 @@ int at_new_tensor(tensor *out__) {
 return 1;
 }
 
+#ifdef CUDA
 int at_empty_cache() {
   PROTECT(
     c10::cuda::CUDACachingAllocator::emptyCache();
@@ -81,6 +84,7 @@ int at_empty_cache() {
   )
 return 1;
 }
+#endif
 
 int at_no_grad(int flag) {
   PROTECT(
@@ -91,6 +95,7 @@ int at_no_grad(int flag) {
 return 1;
 }
 
+#ifdef CUDA
 int at_sync() {
   PROTECT(
     at::cuda::CUDAStream stream = at::cuda::getCurrentCUDAStream();
@@ -100,6 +105,7 @@ int at_sync() {
   // torch::cuda::synchronize();
 return 1;
 }
+#endif
 
 int at_tensor_of_data(tensor *out__, void *vs, int64_t *dims, int ndims, int element_size_in_bytes, int type) {
   PROTECT(
@@ -754,6 +760,7 @@ int ats_free(scalar s) {
 return 1;
 }
 
+#ifdef CUDA
 int atc_cuda_device_count(int *i) {
   PROTECT(
     i[0] = torch::cuda::device_count();
@@ -788,6 +795,7 @@ int atc_set_benchmark_cudnn(int b) {
   )
 return 1;
 }
+#endif
 
 int atm_load(char *filename, module *out__) {
   PROTECT(
