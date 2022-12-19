@@ -9,15 +9,6 @@
 #include<vector>
 #include "torch_api.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
-
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "stb_image_resize.h"
-
 using namespace std;
 
 char *get_and_reset_last_err() {
@@ -361,70 +352,6 @@ tensor at_load(char *filename) {
   return nullptr;
 }
 
-tensor at_load_image(char *filename) {
-  PROTECT(
-    int w = -1;
-    int h = -1;
-    int c = -1;
-    void *data = stbi_load(filename, &w, &h, &c, 3);
-    if (data == nullptr)
-      throw std::invalid_argument(stbi_failure_reason());
-    torch::Tensor tensor = torch::zeros({ h, w, 3 }, at::ScalarType::Byte);
-    memcpy(tensor.data_ptr(), data, h * w * 3);
-    free(data);
-    return new torch::Tensor(tensor);
-  )
-  return nullptr;
-}
-
-tensor at_load_image_from_memory(unsigned char *img_data, size_t img_size) {
-  PROTECT(
-    int w = -1;
-    int h = -1;
-    int c = -1;
-    void *data = stbi_load_from_memory(img_data, img_size, &w, &h, &c, 3);
-    if (data == nullptr)
-      throw std::invalid_argument(stbi_failure_reason());
-    torch::Tensor tensor = torch::zeros({ h, w, 3 }, at::ScalarType::Byte);
-    memcpy(tensor.data_ptr(), data, h * w * 3);
-    free(data);
-    return new torch::Tensor(tensor);
-  )
-  return nullptr;
-}
-
-bool ends_with(const char *str, const char *suffix) {
-  int suffix_len = strlen(suffix);
-  int str_len = strlen(str);
-  if (str_len < suffix_len) return false;
-  for (int i = 1; i <= suffix_len; ++i)
-    if (str[str_len-i] != suffix[suffix_len-i]) return false;
-  return true;
-}
-
-int at_save_image(tensor tensor, char *filename) {
-  PROTECT(
-    auto sizes = tensor->sizes();
-    if (tensor->device().type() != at::kCPU)
-      throw std::invalid_argument("the input tensor has to be on cpu");
-    if (sizes.size() != 3)
-      throw std::invalid_argument("invalid number of dimensions, should be 3");
-    int h = sizes[0];
-    int w = sizes[1];
-    int c = sizes[2];
-    auto tmp_tensor = tensor->contiguous();
-    void *tensor_data = tmp_tensor.data_ptr();
-    if (ends_with(filename, ".jpg"))
-      return stbi_write_jpg(filename, w, h, c, tensor_data, 90);
-    if (ends_with(filename, ".bmp"))
-      return stbi_write_bmp(filename, w, h, c, tensor_data);
-    if (ends_with(filename, ".tga"))
-      return stbi_write_tga(filename, w, h, c, tensor_data);
-    return stbi_write_png(filename, w, h, c, tensor_data, 0);
-  )
-  return -1;
-}
-
 int at_get_num_interop_threads() {
   PROTECT(return at::get_num_interop_threads();)
   return -1;
@@ -462,29 +389,6 @@ void at_set_qengine(int qengine_id) {
     }
     else throw std::invalid_argument("unsupported qengine");
   )
-}
-
-tensor at_resize_image(tensor tensor, int out_w, int out_h) {
-  PROTECT(
-    auto sizes = tensor->sizes();
-    if (tensor->device().type() != at::kCPU)
-      throw std::invalid_argument("the input tensor has to be on cpu");
-    if (sizes.size() != 3)
-      throw std::invalid_argument("invalid number of dimensions, should be 3");
-    int h = sizes[0];
-    int w = sizes[1];
-    int c = sizes[2];
-    auto tmp_tensor = tensor->contiguous();
-    const unsigned char *tensor_data = (unsigned char*)tmp_tensor.data_ptr();
-    torch::Tensor out = torch::zeros({ out_h, out_w, c }, at::ScalarType::Byte);
-    stbir_resize_uint8(tensor_data, w, h, 0, (unsigned char*)out.data_ptr(), out_w, out_h, 0, c);
-    return new torch::Tensor(out);
-  )
-  return nullptr;
-}
-
-void at_free(tensor t) {
-  delete(t);
 }
 
 void at_run_backward(tensor *tensors,
