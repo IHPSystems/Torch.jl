@@ -17,7 +17,7 @@ char *get_and_reset_last_err() {
     return tmp;
 }
 
-void at_manual_seed(int64_t seed) {
+int at_manual_seed(int64_t seed) {
   torch::manual_seed(seed);
 }
 
@@ -67,7 +67,7 @@ int at_tensor_of_data(tensor *out__, void *vs, int64_t *dims, size_t ndims, size
   return nullptr;
 }
 
-void at_copy_data(tensor tensor, void *vs, size_t numel, size_t elt_size_in_bytes) {
+int at_copy_data(tensor tensor, void *vs, size_t numel, size_t elt_size_in_bytes) {
   PROTECT(
     if ((int64_t)elt_size_in_bytes != tensor->element_size())
       throw std::invalid_argument("incoherent element sizes in bytes");
@@ -117,14 +117,14 @@ int at_dim(size_t *out__, tensor t) {
   return -1;
 }
 
-void at_shape(tensor t, int64_t *dims) {
+int at_shape(tensor t, int64_t *dims) {
   PROTECT(
     int i = 0;
     for (int64_t dim : t->sizes()) dims[i++] = dim;
   )
 }
 
-void at_stride(tensor t, int64_t *dims) {
+int at_stride(tensor t, int64_t *dims) {
   PROTECT(
     int i = 0;
     for (int64_t dim: t->strides()) dims[i++] = dim;
@@ -138,13 +138,13 @@ int at_scalar_type(int *out__, tensor t) {
   return -1;
 }
 
-void at__amp_non_finite_check_and_unscale(tensor t, tensor found_inf, tensor inf_scale) {
+int at__amp_non_finite_check_and_unscale(tensor t, tensor found_inf, tensor inf_scale) {
   PROTECT(
     at::_amp_foreach_non_finite_check_and_unscale_(*t, *found_inf, *inf_scale);
   )
 }
 
-void at_autocast_clear_cache() {
+int at_autocast_clear_cache() {
   at::autocast::clear_cache();
 }
 
@@ -187,7 +187,7 @@ int at_device(int *out__, tensor t) {
   return -2;
 }
 
-void at_backward(tensor t, int keep_graph, int create_graph) {
+int at_backward(tensor t, int keep_graph, int create_graph) {
   PROTECT(t->backward({}, keep_graph, create_graph);)
 }
 
@@ -231,7 +231,7 @@ int at_int64_value_at_indexes(int64_t *out__, tensor t, int64_t *indexes, int in
 }
 
 template<typename T>
-void at_set_value_at_indexes(tensor t, int *indexes, int indexes_len, T v) {
+int at_set_value_at_indexes(tensor t, int *indexes, int indexes_len, T v) {
   PROTECT(
     torch::Tensor tensor = *t;
     for (int i = 0; i < indexes_len; ++i) {
@@ -241,23 +241,23 @@ void at_set_value_at_indexes(tensor t, int *indexes, int indexes_len, T v) {
   )
 }
 
-void at_set_double_value_at_indexes(tensor t, int *indexes, int indexes_len, double v) {
+int at_set_double_value_at_indexes(tensor t, int *indexes, int indexes_len, double v) {
   at_set_value_at_indexes<double>(t, indexes, indexes_len, v);
 }
 
-void at_set_int64_value_at_indexes(tensor t, int *indexes, int indexes_len, int64_t v) {
+int at_set_int64_value_at_indexes(tensor t, int *indexes, int indexes_len, int64_t v) {
   at_set_value_at_indexes<int64_t>(t, indexes, indexes_len, v);
 }
 
-void at_fill_double(tensor t, double v) {
+int at_fill_double(tensor t, double v) {
   PROTECT(t->fill_(v);)
 }
 
-void at_fill_int64(tensor t, int64_t v) {
+int at_fill_int64(tensor t, int64_t v) {
   PROTECT(t->fill_(v);)
 }
 
-void at_print(tensor t) {
+int at_print(tensor t) {
   PROTECT(
     torch::Tensor *tensor = (torch::Tensor*)t;
     cout << *tensor << endl;
@@ -273,17 +273,17 @@ char *at_to_string(tensor t, int line_size) {
   return nullptr;
 }
 
-void at_copy_(tensor dst, tensor src) {
+int at_copy_(tensor dst, tensor src) {
   PROTECT(
     dst->copy_(*src);
   )
 }
 
-void at_save(tensor t, char *filename) {
+int at_save(tensor t, char *filename) {
   PROTECT(torch::save(*t, filename);)
 }
 
-void at_save_multi(tensor *tensors, char **tensor_names, int ntensors, char *filename) {
+int at_save_multi(tensor *tensors, char **tensor_names, int ntensors, char *filename) {
   PROTECT(
     torch::serialize::OutputArchive archive;
     for (int i = 0; i < ntensors; ++i)
@@ -292,7 +292,7 @@ void at_save_multi(tensor *tensors, char **tensor_names, int ntensors, char *fil
   )
 }
 
-void at_load_multi(tensor *tensors, char **tensor_names, int ntensors, char *filename) {
+int at_load_multi(tensor *tensors, char **tensor_names, int ntensors, char *filename) {
   PROTECT(
     torch::serialize::InputArchive archive;
     archive.load_from(std::string(filename));
@@ -306,7 +306,7 @@ void at_load_multi(tensor *tensors, char **tensor_names, int ntensors, char *fil
   )
 }
 
-void at_load_callback(char *filename, void *data, void (*f)(void *, char *, tensor)) {
+int at_load_callback(char *filename, void *data, void (*f)(void *, char *, tensor)) {
   PROTECT(
     auto module = torch::jit::load(filename);
     for (const auto &p : module.named_parameters()) {
@@ -316,7 +316,7 @@ void at_load_callback(char *filename, void *data, void (*f)(void *, char *, tens
   )
 }
 
-void at_load_callback_with_device(char *filename, void *data, void (*f)(void *, char *, tensor), int device_id) {
+int at_load_callback_with_device(char *filename, void *data, void (*f)(void *, char *, tensor), int device_id) {
   PROTECT(
     auto module = torch::jit::load(filename, device_of_int(device_id));
     for (const auto &p : module.named_parameters()) {
@@ -326,7 +326,7 @@ void at_load_callback_with_device(char *filename, void *data, void (*f)(void *, 
   )
 }
 
-void at_load_multi_(tensor *tensors, char **tensor_names, int ntensors, char *filename) {
+int at_load_multi_(tensor *tensors, char **tensor_names, int ntensors, char *filename) {
   PROTECT(
     torch::NoGradGuard no_grad;
     torch::serialize::InputArchive archive;
@@ -362,15 +362,15 @@ int at_get_num_threads(int *out__) {
   return -1;
 }
 
-void at_set_num_interop_threads(int n_threads) {
+int at_set_num_interop_threads(int n_threads) {
   PROTECT(at::set_num_interop_threads(n_threads);)
 }
 
-void at_set_num_threads(int n_threads) {
+int at_set_num_threads(int n_threads) {
   PROTECT(at::set_num_threads(n_threads);)
 }
 
-void at_set_qengine(int qengine_id) {
+int at_set_qengine(int qengine_id) {
   PROTECT(
     at::QEngine qengine = at::QEngine::NoQEngine;
     switch (qengine_id) {
@@ -391,7 +391,7 @@ void at_set_qengine(int qengine_id) {
   )
 }
 
-void at_run_backward(tensor *tensors,
+int at_run_backward(tensor *tensors,
                      int ntensors,
                      tensor *inputs,
                      int ninputs,
@@ -485,7 +485,7 @@ int ato_sgd(optimizer *out__, double learning_rate,
   return nullptr;
 }
 
-void ato_add_parameters(optimizer t, tensor tensor, size_t group) {
+int ato_add_parameters(optimizer t, tensor tensor, size_t group) {
   PROTECT(
     auto &groups = t->param_groups();
     while (groups.size() <= group) {
@@ -510,7 +510,7 @@ void set_lr(optimizer t, double learning_rate) {
   }
 }
 
-void ato_set_learning_rate(optimizer t, double learning_rate) {
+int ato_set_learning_rate(optimizer t, double learning_rate) {
   PROTECT(
     set_lr<torch::optim::AdamOptions>(t, learning_rate);
     set_lr<torch::optim::AdamWOptions>(t, learning_rate);
@@ -528,7 +528,7 @@ void set_lr_group(optimizer t, size_t group, double learning_rate) {
   }
 }
 
-void ato_set_learning_rate_group(optimizer t, size_t group, double learning_rate) {
+int ato_set_learning_rate_group(optimizer t, size_t group, double learning_rate) {
   PROTECT(
     set_lr_group<torch::optim::AdamOptions>(t, group, learning_rate);
     set_lr_group<torch::optim::AdamWOptions>(t, group, learning_rate);
@@ -537,7 +537,7 @@ void ato_set_learning_rate_group(optimizer t, size_t group, double learning_rate
   )
 }
 
-void ato_set_momentum(optimizer t, double momentum) {
+int ato_set_momentum(optimizer t, double momentum) {
   PROTECT(
     torch::optim::OptimizerOptions* d = &(t->defaults());
     if (auto adam = dynamic_cast<torch::optim::AdamOptions*>(d)) {
@@ -587,7 +587,7 @@ void ato_set_momentum(optimizer t, double momentum) {
   )
 }
 
-void ato_set_momentum_group(optimizer t, size_t group, double momentum) {
+int ato_set_momentum_group(optimizer t, size_t group, double momentum) {
   PROTECT(
     auto &param_group = t->param_groups().at(group);
     torch::optim::OptimizerOptions* d = &(param_group.options());
@@ -626,7 +626,7 @@ void set_weight_decay(optimizer t, double weight_decay) {
   }
 }
 
-void ato_set_weight_decay(optimizer t, double weight_decay) {
+int ato_set_weight_decay(optimizer t, double weight_decay) {
   PROTECT(
     set_weight_decay<torch::optim::AdamOptions>(t, weight_decay);
     set_weight_decay<torch::optim::AdamWOptions>(t, weight_decay);
@@ -644,7 +644,7 @@ void set_weight_decay_group(optimizer t, size_t group, double weight_decay) {
   }
 }
 
-void ato_set_weight_decay_group(optimizer t, size_t group, double weight_decay) {
+int ato_set_weight_decay_group(optimizer t, size_t group, double weight_decay) {
   PROTECT(
     set_weight_decay_group<torch::optim::AdamOptions>(t, group, weight_decay);
     set_weight_decay_group<torch::optim::AdamWOptions>(t, group, weight_decay);
@@ -653,15 +653,15 @@ void ato_set_weight_decay_group(optimizer t, size_t group, double weight_decay) 
   )
 }
 
-void ato_zero_grad(optimizer t) {
+int ato_zero_grad(optimizer t) {
   PROTECT(t->zero_grad();)
 }
 
-void ato_step(optimizer t) {
+int ato_step(optimizer t) {
   PROTECT(t->step();)
 }
 
-void ato_free(optimizer t) {
+int ato_free(optimizer t) {
   delete(t);
 }
 
@@ -695,7 +695,7 @@ char *ats_to_string(scalar s) {
   return nullptr;
 }
 
-void ats_free(scalar s) {
+int ats_free(scalar s) {
   delete(s);
 }
 
@@ -719,11 +719,11 @@ int atc_user_enabled_cudnn(int *out__) {
   return -1;
 }
 
-void atc_set_user_enabled_cudnn(int b) {
+int atc_set_user_enabled_cudnn(int b) {
   at::globalContext().setUserEnabledCuDNN(b);
 }
 
-void atc_set_benchmark_cudnn(int b) {
+int atc_set_benchmark_cudnn(int b) {
   at::globalContext().setBenchmarkCuDNN(b);
 }
 
@@ -807,29 +807,29 @@ int atm_method_(ivalue *out__, module m, char *method_name, ivalue *ivalues, int
   return nullptr;
 }
 
-void atm_eval(module m) {
+int atm_eval(module m) {
   PROTECT(
     m->eval();
   )
 }
 
-void atm_train(module m) {
+int atm_train(module m) {
   PROTECT(
     m->train();
   )
 }
 
-void atm_free(module m) {
+int atm_free(module m) {
   delete(m);
 }
 
-void atm_save(module m, char *filename) {
+int atm_save(module m, char *filename) {
   PROTECT(
     m->save(filename);
   )
 }
 
-void atm_to(module m, int device, int dtype, bool non_blocking) {
+int atm_to(module m, int device, int dtype, bool non_blocking) {
   PROTECT(
     m->to(device_of_int(device), at::ScalarType(dtype), non_blocking);
   )
@@ -842,7 +842,7 @@ int atm_get_profiling_mode(int *out__) {
   return 0;
 }
 
-void atm_set_profiling_mode(int b) {
+int atm_set_profiling_mode(int b) {
   PROTECT(
     torch::jit::getProfilingMode() = (bool)b;
   )
@@ -870,7 +870,7 @@ int atm_create_for_tracing(module *out__,
   return nullptr;
 }
 
-void atm_end_tracing(module m, char *fn_name, tensor *outputs, int noutputs) {
+int atm_end_tracing(module m, char *fn_name, tensor *outputs, int noutputs) {
   PROTECT(
     auto state = torch::jit::tracer::getTracingState();
     if (state == nullptr)
@@ -886,7 +886,7 @@ void atm_end_tracing(module m, char *fn_name, tensor *outputs, int noutputs) {
   )
 }
 
-void atm_named_parameters(module m, void *data, void (*f)(void *, char *, tensor)) {
+int atm_named_parameters(module m, void *data, void (*f)(void *, char *, tensor)) {
   PROTECT(
     for (const auto &p : m->named_parameters()) {
       auto v = p.value;
@@ -1090,7 +1090,7 @@ int ati_tuple_length(int *out__, ivalue i) {
   return -1;
 }
 
-void ati_to_tuple(ivalue i,
+int ati_to_tuple(ivalue i,
                   ivalue *outputs,
                   int noutputs) {
   PROTECT(
@@ -1103,7 +1103,7 @@ void ati_to_tuple(ivalue i,
   )
 }
 
-void ati_to_generic_list(ivalue i,
+int ati_to_generic_list(ivalue i,
                          ivalue *outputs,
                          int noutputs) {
   PROTECT(
@@ -1116,7 +1116,7 @@ void ati_to_generic_list(ivalue i,
   )
 }
 
-void ati_to_generic_dict(ivalue i,
+int ati_to_generic_dict(ivalue i,
                          ivalue *outputs,
                          int noutputs) {
   PROTECT(
@@ -1132,7 +1132,7 @@ void ati_to_generic_dict(ivalue i,
   )
 }
 
-void ati_to_int_list(ivalue i,
+int ati_to_int_list(ivalue i,
                   int64_t *outputs,
                   int noutputs) {
   PROTECT(
@@ -1145,7 +1145,7 @@ void ati_to_int_list(ivalue i,
   )
 }
 
-void ati_to_double_list(ivalue i,
+int ati_to_double_list(ivalue i,
                         double *outputs,
                         int noutputs) {
   PROTECT(
@@ -1158,7 +1158,7 @@ void ati_to_double_list(ivalue i,
   )
 }
 
-void ati_to_bool_list(ivalue i,
+int ati_to_bool_list(ivalue i,
                       char *outputs,
                       int noutputs) {
   PROTECT(
@@ -1171,7 +1171,7 @@ void ati_to_bool_list(ivalue i,
   )
 }
 
-void ati_to_tensor_list(ivalue i,
+int ati_to_tensor_list(ivalue i,
                         tensor *outputs,
                         int noutputs) {
   PROTECT(
@@ -1185,7 +1185,7 @@ void ati_to_tensor_list(ivalue i,
 }
 
 
-void ati_free(ivalue i) {
+int ati_free(ivalue i) {
   delete(i);
 }
 
