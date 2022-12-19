@@ -33,7 +33,7 @@ int at_tensor_of_data(tensor *, void *vs, int64_t *dims, size_t ndims, size_t el
 int at_copy_data(tensor tensor, void *vs, size_t numel, size_t element_size_in_bytes);
 int at_shallow_clone(tensor *, tensor);
 
-void *at_data_ptr(tensor);
+int at_data_ptr(void **, tensor);
 int at_defined(int *, tensor);
 int at_is_mkldnn(int *, tensor);
 int at_is_sparse(int *, tensor);
@@ -67,7 +67,7 @@ int at_set_int64_value_at_indexes(tensor, int *indexes, int indexes_len, int64_t
 int at_copy_(tensor dst, tensor src);
 
 int at_print(tensor);
-char *at_to_string(tensor, int line_size);
+int at_to_string(char **, tensor, int line_size);
 int at_save(tensor, char *filename);
 int at_load(tensor *, char *filename);
 
@@ -134,7 +134,7 @@ int ats_int(scalar *, int64_t);
 int ats_float(scalar *, double);
 int ats_to_int(int64_t *, scalar);
 int ats_to_float(double *, scalar);
-char *ats_to_string(scalar);
+int ats_to_string(char **, scalar);
 int ats_free(scalar);
 
 int atc_cuda_device_count(int *);
@@ -191,7 +191,7 @@ int ati_tensor_list(ivalue *, tensor *, int);
 int ati_to_tensor(tensor *, ivalue);
 int ati_to_int(int64_t *, ivalue);
 int ati_to_double(double *, ivalue);
-char *ati_to_string(ivalue);
+int ati_to_string(char **, ivalue);
 int ati_to_bool(int *, ivalue);
 int ati_length(int *, ivalue);
 int ati_tuple_length(int *, ivalue);
